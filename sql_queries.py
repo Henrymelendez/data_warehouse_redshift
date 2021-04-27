@@ -5,10 +5,8 @@ import configparser
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
-IAM_ROLE = config['IAM_ROLE']['ARN']
-LOG_DATA = config['S3']['LOG_DATA']
-SONG_DATA = config['S3']['SONG_DATA']
-LOG_JSONPATH = config['S3']['LOG_JSONPATH']
+DWH_IAM_ROLE = config.get("IAM_ROLE", "ARN")
+
 
 # DROP TABLES
 
@@ -105,17 +103,20 @@ time_table_create = ("""CREATE TABLE IF NOT EXISTS time(
 
 # STAGING TABLES
 
-staging_events_copy = (f"""copy staging_events 
-                          from{LOG_DATA}
-                          iam_role {IAM_ROLE}
-                          json {LOG_JSONPATH};
-""")
+staging_events_copy = ("""COPY staging_events
+FROM 's3://udacity-dend/log_data'
+IAM_ROLE {}
+REGION 'us-west-2' compupdate off
+JSON 's3://udacity-dend/log_json_path.json';
+""").format(DWH_IAM_ROLE)
 
-staging_songs_copy = (f"""copy staging_songs 
-                          from {SONG_DATA} 
-                          iam_role {IAM_ROLE}
-                          json 'auto';
-""")
+
+staging_songs_copy = ("""copy staging_songs
+FROM 's3://udacity-dend/song_data'
+IAM_ROLE {}
+REGION 'us-west-2' compupdate off
+JSON 'auto';
+""").format(DWH_IAM_ROLE)
 
 # FINAL TABLES
 
